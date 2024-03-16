@@ -1,17 +1,17 @@
 import random
 import string
+import zipfile
 
-def generate_code(fixed_prefix, length=16, generated_codes=None):
+def generate_code(fixed_prefix="", length=16, generated_codes=None):
     if generated_codes is None:
         generated_codes = set()  # Initialize an empty set to store generated codes
 
     while True:
-        if not 4 <= len(fixed_prefix) <= 8:
+        if fixed_prefix and not 4 <= len(fixed_prefix) <= 8:
             raise ValueError("Fixed prefix length must be between 4 and 8 characters.")
 
         characters = string.ascii_uppercase + string.digits
-        remaining_length = length - len(fixed_prefix)
-        random_part = ''.join(random.choice(characters) for _ in range(remaining_length))
+        random_part = ''.join(random.choice(characters) for _ in range(length))
         code = fixed_prefix + random_part
 
         if code not in generated_codes:
@@ -19,7 +19,14 @@ def generate_code(fixed_prefix, length=16, generated_codes=None):
             return code
 
 # Get user input
-fixed_prefix = input("Enter the fixed prefix (4-8 letters): ").upper()
+num_digits = int(input("Enter the number of digits for the code: "))
+use_fixed_prefix = input("Do you want to use a fixed prefix (yes/no)? ").lower()
+
+if use_fixed_prefix == "yes":
+    fixed_prefix = input("Enter the fixed prefix (4-8 letters): ").upper()
+else:
+    fixed_prefix = ""  # No fixed prefix
+
 num_codes = int(input("Enter the number of codes to generate: "))
 
 # Calculate number of files needed
@@ -33,8 +40,19 @@ for file_index in range(1, file_count + 1):
     with open(filename, "w") as file:
         for _ in range(max_codes_per_file):
             if num_codes > 0:
-                code = generate_code(fixed_prefix, generated_codes=generated_codes)
+                code = generate_code(fixed_prefix, num_digits, generated_codes=generated_codes)
                 file.write(code + "\n")
                 num_codes -= 1
 
-print(f"Codes generated and saved to {file_count} files (code_1.txt, code_2.txt, ...)")
+# Zip the generated files
+with zipfile.ZipFile("codes.zip", "w") as zip_file:
+    for file_index in range(1, file_count + 1):
+        filename = f"code_{file_index}.txt"
+        zip_file.write(filename)
+
+# Delete the individual text files (optional)
+# for file_index in range(1, file_count + 1):
+#     filename = f"code_{file_index}.txt"
+#     os.remove(filename)
+
+print(f"Codes generated and zipped into codes.zip")
